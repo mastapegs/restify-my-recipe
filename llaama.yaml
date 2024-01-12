@@ -1,0 +1,276 @@
+version: 1
+title: EHR1
+contributor: bernard@llaama.com
+summary: Co-occurrence graph
+description: |-
+  Electronic Health Record Co-Occurrence terms and concepts as a graph
+ingestStreams:
+  # terms
+  - type: FileIngest
+    path: ./data/1_term_ID_to_string.txt
+    format:
+      type: CypherCsv
+      delimiter: Tab
+      headers: true
+      query: |-
+        MATCH (term)
+        WHERE id(term) = idFrom('Term', $that.ID)
+
+        SET term.name = $that.Term,
+            term: Term
+  # concepts
+  - type: FileIngest
+    path: ./data/2a_concept_ID_to_string.txt
+    format:
+      type: CypherCsv
+      delimiter: Tab
+      headers: false
+      query: |-
+        MATCH (concept)
+        WHERE id(concept) = idFrom('Concept', $that[0])
+
+        SET concept.name = $that[1],
+            concept: Concept
+  # concept to CUI
+  - type: FileIngest
+    path: ./data/2b_concept_ID_to_CUI.txt
+    format:
+      type: CypherCsv
+      delimiter: Tab
+      headers: false
+      query: |-
+
+        MATCH (concept), (cui)
+        WHERE id(concept) = idFrom('Concept', $that[0])
+          AND id(cui) = idFrom('CUI', $that[1])
+
+        SET cui.ref = $that[0],
+            cui.concept = concept.name,
+            cui: CUI
+
+        CREATE (concept:Concept)-[:IS_OF_CUI]->(cui:CUI)
+  # terms to concept
+  - type: FileIngest
+    path: ./data/3_term_ID_to_concept_ID.txt
+    format:
+      type: CypherCsv
+      delimiter: Tab
+      headers: false
+      query: |-
+        MATCH (term), (concept)
+        WHERE id(term) = idFrom('Term', $that[0])
+          AND id(concept) = idFrom('Concept', $that[1])
+
+        CREATE (term:Term)-[:IS_OF_CONCEPT]->(concept:Concept)
+  ## concept coRef <-- SQ
+  - type: FileIngest
+    path: ./data/cofreqs_concepts_perPat_alld.txt
+    format:
+      type: CypherCsv
+      delimiter: Tab
+      headers: false
+      query: |-
+        MATCH (concept1), (concept2), (coref)
+        WHERE id(coref) = idFrom('coref', $that[0], $that[1])
+          AND id(concept1) = idFrom('Concept', $that[0])
+          AND id(concept2) = idFrom('Concept', $that[1])
+
+        SET coref.perPatAll =$that[2],
+            coref.concept1 = concept1.name,
+            coref.concept2 = concept2.name,
+            coref: Coref
+
+        CREATE (concept1:Concept)-[:C_CO_FREQUENT]->(coref:Coref)<-[:C_CO_FREQUENT]-(concept2:Concept)
+  ##        CREATE (concept1:Concept)-[ccoref:CO_FREQUENT {perPat: r[5]}]->(concept2:Concept) PROPERTIES ON EDGE ARE NOT YET SUPPORTED
+  ## term coRef1 <-- SQ
+  - type: FileIngest
+    path: ./data/cofreqs_terms_perPat_alld.txt
+    format:
+      type: CypherCsv
+      delimiter: Tab
+      headers: false
+      query: |-
+        MATCH (term1), (term2), (tcoref)
+        WHERE id(tcoref) = idFrom('tcoref', $that[0], $that[1])
+          AND id(term1) = idFrom('Term',  $that[0])
+          AND id(term2) = idFrom('Term',  $that[1])
+
+        SET tcoref.perPatAll = $that[2],
+            tcoref.term1 = term1.name,
+            tcoref.term2 = term2.name,
+            tcoref: Tcoref
+
+        CREATE (term1:Term)-[:T_CO_FREQUENT]->(tcoref:Tcoref)<-[:T_CO_FREQUENT]-(term2:Term)
+  ## term occurence
+  - type: FileIngest
+    path: ./data/singlets_terms_perPat.txt
+    format:
+      type: CypherCsv
+      delimiter: Tab
+      headers: false
+      query: |-
+        MATCH (term), (tocc)
+        WHERE id(tocc) = idFrom('Tocc', $that[0])
+          AND id(term) = idFrom('Term', $that[0])
+
+        SET tocc.perPat = $that[1],
+            tocc.term = term.name,
+            tocc: Tocc
+
+        CREATE (term: Term)-[:OCCURENCE]->(tocc: Tocc)
+  ## concept occurence
+  - type: FileIngest
+    path: ./data/singlets_concepts_perPat.txt
+    format:
+      type: CypherCsv
+      delimiter: Tab
+      headers: false
+      query: |-
+        MATCH (concept), (cocc)
+        WHERE id(cocc) = idFrom('Cocc', $that[0])
+          AND id(concept) = idFrom('Concept', $that[0])
+
+        SET cocc.perPat = $that[1],
+            cocc.term = concept.name,
+            cocc: Cocc
+
+        CREATE (concept: Concept)-[:OCCURENCE]->(cocc: Cocc)
+
+standingQueries:
+  - pattern:
+      type: Cypher
+      query: |-
+        MATCH (concept1: Concept)-[:C_CO_FREQUENT]->(ccoref1:Ccoref)<-[:C_CO_FREQUENT]-(concept2: Concept)-[:C_CO_FREQUENT]->(ccoref2:Ccoref)<-[:C_CO_FREQUENT]-(concept3: Concept)
+        RETURN DISTINCT id(concept1) AS conceptID
+      #        WHERE ccoref1.perPatAll > 100 AND ccoref2.perPatAll > 100
+      mode: DistinctId
+    outputs:
+      alert:
+        type: CypherQuery
+        query: |-
+          MATCH (concept1: Concept)-[:C_CO_FREQUENT]->(ccoref1:Ccoref)<-[:C_CO_FREQUENT]-(concept2: Concept)-[:C_CO_FREQUENT]->(ccoref2:Ccoref)<-[:C_CO_FREQUENT]-(concept3: Concept)
+          WHERE id(concept1) = $that.data.conceptID 
+            AND ccoref1.perPatAll > 100 AND ccoref2.perPatAll > 100
+          RETURN (concept1)
+        andThen:
+          type: PrintToStandardOut
+
+nodeAppearances:
+  - predicate:
+      propertyKeys: []
+      knownValues: {}
+      dbLabel: Term
+    icon: document
+    color: "#366AFF"
+    size: 30.00
+    label:
+      type: Property
+      key: name
+      prefix: "Term: "
+  - predicate:
+      propertyKeys: []
+      knownValues: {}
+      dbLabel: Concept
+    icon: home
+    color: "#2FB3FF"
+    size: 30.00
+    label:
+      type: Property
+      key: name
+      prefix: "Concept: "
+  - predicate:
+      propertyKeys: []
+      knownValues: {}
+      dbLabel: Ccoref
+    icon: link
+    color: "#74FF5E"
+    size: 30.00
+    label:
+      type: Constant
+      value: "Concept-coref"
+  - predicate:
+      propertyKeys: []
+      knownValues: {}
+      dbLabel: Tcoref
+    icon: link
+    color: "#922CFF"
+    size: 30.00
+    label:
+      type: Constant
+      value: "Term-coref"
+  - predicate:
+      propertyKeys: []
+      knownValues: {}
+      dbLabel: tcoref
+    icon: plus-circled
+    color: "#922CFF"
+    size: 30.00
+    label:
+      type: Constant
+      value: "Term-coref"
+  - predicate:
+      propertyKeys: []
+      knownValues: {}
+      dbLabel: Tocc
+    icon: plus-circled
+    color: "#922CFF"
+    size: 20.00
+    label:
+      type: Constant
+      value: "Occurence"
+quickQueries:
+  - predicate:
+      propertyKeys: []
+      knownValues: {}
+    quickQuery:
+      name: "[Node] Adjacent Nodes"
+      querySuffix: MATCH (n)--(m) RETURN DISTINCT m
+      queryLanguage: Cypher
+      sort: Node
+  - predicate:
+      propertyKeys: []
+      knownValues: {}
+    quickQuery:
+      name: "[Node] Refresh"
+      querySuffix: RETURN n
+      queryLanguage: Cypher
+      sort: Node
+  - predicate:
+      propertyKeys: []
+      knownValues: {}
+    quickQuery:
+      name: "[Text] Local Properties"
+      querySuffix: RETURN id(n), properties(n)
+      queryLanguage: Cypher
+      sort: Text
+  - predicate:
+      propertyKeys: []
+      knownValues: {}
+    quickQuery:
+      name: "[Node] Concept"
+      querySuffix: MATCH (n)-[:IS_OF_CONCEPT]->(concept:Concept) RETURN concept
+      queryLanguage: Cypher
+      sort: Node
+  - predicate:
+      propertyKeys: []
+      knownValues: {}
+    quickQuery:
+      name: "[Node] CUI"
+      querySuffix: MATCH (n)-[:IS_OF_CUI]->(cui) RETURN DISTINCT cui
+      queryLanguage: Cypher
+      sort: Node
+  - predicate:
+      propertyKeys: []
+      knownValues: {}
+    quickQuery:
+      name: "[Node] Occurence"
+      querySuffix: MATCH (n)-[:OCCURENCE]->(occurence) RETURN DISTINCT occurence
+      queryLanguage: Cypher
+      sort: Node
+
+sampleQueries:
+  # Provide easy access to node types in the Exploration UI
+  - name: Last 10 Nodes
+    query: CALL recentNodes(10)
+  - name: Legend
+    query: MATCH (n) WHERE labels(n) IS NOT NULL WITH labels(n) AS kind, collect(n) AS legend RETURN legend[0]
