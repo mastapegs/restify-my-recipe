@@ -16,6 +16,9 @@ import sttp.client4.Response
 
 import io.circe.generic.auto._
 
+import io.circe.generic.auto._
+import io.circe.syntax._
+
 case class Format(
     `type`: String,
     delimiter: String,
@@ -44,6 +47,13 @@ object RestifyRecipe {
               //   .header("Content-Type", "application/json")
               //   .body()
               //   .send()
+              val response = quickRequest
+                .post(
+                  uri"http://localhost:8080/api/v1/ingest/INGEST-${index + 1}"
+                )
+                .header("Content-Type", "application/json; charset=utf-8")
+                .body(stream.asJson.noSpaces)
+                .send()
             })
           }))
       })
