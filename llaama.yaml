@@ -7,7 +7,7 @@ description: |-
 ingestStreams:
   # terms
   - type: FileIngest
-    path: ./data/1_term_ID_to_string.txt
+    path: ../../work-dev/pekko-testing/LLAAMA/data/1_term_ID_to_string.txt
     format:
       type: CypherCsv
       delimiter: Tab
@@ -20,7 +20,7 @@ ingestStreams:
             term: Term
   # concepts
   - type: FileIngest
-    path: ./data/2a_concept_ID_to_string.txt
+    path: ../../work-dev/pekko-testing/LLAAMA/data/2a_concept_ID_to_string.txt
     format:
       type: CypherCsv
       delimiter: Tab
@@ -33,7 +33,7 @@ ingestStreams:
             concept: Concept
   # concept to CUI
   - type: FileIngest
-    path: ./data/2b_concept_ID_to_CUI.txt
+    path: ../../work-dev/pekko-testing/LLAAMA/data/2b_concept_ID_to_CUI.txt
     format:
       type: CypherCsv
       delimiter: Tab
@@ -51,7 +51,7 @@ ingestStreams:
         CREATE (concept:Concept)-[:IS_OF_CUI]->(cui:CUI)
   # terms to concept
   - type: FileIngest
-    path: ./data/3_term_ID_to_concept_ID.txt
+    path: ../../work-dev/pekko-testing/LLAAMA/data/3_term_ID_to_concept_ID.txt
     format:
       type: CypherCsv
       delimiter: Tab
@@ -64,7 +64,7 @@ ingestStreams:
         CREATE (term:Term)-[:IS_OF_CONCEPT]->(concept:Concept)
   ## concept coRef <-- SQ
   - type: FileIngest
-    path: ./data/cofreqs_concepts_perPat_alld.txt
+    path: ../../work-dev/pekko-testing/LLAAMA/data/cofreqs_concepts_perPat_alld.txt
     format:
       type: CypherCsv
       delimiter: Tab
@@ -84,7 +84,7 @@ ingestStreams:
   ##        CREATE (concept1:Concept)-[ccoref:CO_FREQUENT {perPat: r[5]}]->(concept2:Concept) PROPERTIES ON EDGE ARE NOT YET SUPPORTED
   ## term coRef1 <-- SQ
   - type: FileIngest
-    path: ./data/cofreqs_terms_perPat_alld.txt
+    path: ../../work-dev/pekko-testing/LLAAMA/data/cofreqs_terms_perPat_alld.txt
     format:
       type: CypherCsv
       delimiter: Tab
@@ -103,7 +103,7 @@ ingestStreams:
         CREATE (term1:Term)-[:T_CO_FREQUENT]->(tcoref:Tcoref)<-[:T_CO_FREQUENT]-(term2:Term)
   ## term occurence
   - type: FileIngest
-    path: ./data/singlets_terms_perPat.txt
+    path: ../../work-dev/pekko-testing/LLAAMA/data/singlets_terms_perPat.txt
     format:
       type: CypherCsv
       delimiter: Tab
@@ -120,7 +120,7 @@ ingestStreams:
         CREATE (term: Term)-[:OCCURENCE]->(tocc: Tocc)
   ## concept occurence
   - type: FileIngest
-    path: ./data/singlets_concepts_perPat.txt
+    path: ../../work-dev/pekko-testing/LLAAMA/data/singlets_concepts_perPat.txt
     format:
       type: CypherCsv
       delimiter: Tab

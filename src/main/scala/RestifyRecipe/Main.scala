@@ -42,11 +42,6 @@ object RestifyRecipe {
               println(index + 1)
               println(stream)
               println("-----")
-              // val response = quickRequest
-              //   .post(uri"http://localhost:8080/api/v1/ingest")
-              //   .header("Content-Type", "application/json")
-              //   .body()
-              //   .send()
               val response = quickRequest
                 .post(
                   uri"http://localhost:8080/api/v1/ingest/INGEST-${index + 1}"
