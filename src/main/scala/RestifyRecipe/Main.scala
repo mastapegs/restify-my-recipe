@@ -17,11 +17,14 @@ object RestifyRecipe {
       val yamlString = Source.fromFile(args(0)).getLines.mkString("\n")
       val yamlJson: Either[ParsingFailure, Json] = parser.parse(yamlString)
 
-      yamlJson match {
-        case Left(failure) =>
-          println(s"Failed to parse YAML: ${failure.getMessage}")
-        case Right(json) => println(s"Parsed YAML: $json")
-      }
+      yamlJson.foreach({ json =>
+        json.hcursor
+          .downField("ingestStreams")
+          .as[List[Json]]
+          .foreach(_.foreach({ stream =>
+            println(stream)
+          }))
+      })
     } else {
       println("Please provide a YAML file path as an argument.")
     }
