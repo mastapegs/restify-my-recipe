@@ -10,6 +10,16 @@ import java.io.InputStream
 import scala.collection.JavaConverters._
 import io.circe._
 import io.circe.yaml.parser
+import sttp.client4.quick._
+import sttp.client4.Response
+
+case class Format(
+    `type`: String,
+    delimiter: String,
+    headers: Boolean,
+    query: String
+)
+case class Stream(`type`: String, path: String, format: Format)
 
 object RestifyRecipe {
   def main(args: Array[String]) = {
@@ -23,6 +33,11 @@ object RestifyRecipe {
           .as[List[Json]]
           .foreach(_.foreach({ stream =>
             println(stream)
+            val response = quickRequest
+              .post(uri"http://localhost:8080/api/v1/ingest")
+              .header("Content-Type", "application/json")
+              .body()
+              .send()
           }))
       })
     } else {
