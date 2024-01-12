@@ -8,5 +8,7 @@ lazy val root = project
     scalaVersion := scala3Version,
     libraryDependencies += "org.scalameta" %% "munit" % "0.7.29" % Test,
     libraryDependencies += "io.circe" %% "circe-yaml" % "0.14.2",
+    libraryDependencies += "io.circe" %% "circe-generic" % "0.14.2",
+    libraryDependencies += "io.circe" %% "circe-parser" % "0.14.2",
     libraryDependencies += "com.softwaremill.sttp.client4" %% "core" % "4.0.0-M1"
   )
