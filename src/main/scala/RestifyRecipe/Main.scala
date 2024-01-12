@@ -34,8 +34,9 @@ object RestifyRecipe {
         json.hcursor
           .downField("ingestStreams")
           .as[List[Json]]
-          .foreach(_.foreach({ streamJson =>
+          .foreach(_.zipWithIndex.foreach({ case (streamJson, index) =>
             decode[Stream](streamJson.noSpaces).foreach({ stream =>
+              println(index + 1)
               println(stream)
               println("-----")
               // val response = quickRequest
