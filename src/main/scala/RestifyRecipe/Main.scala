@@ -27,8 +27,8 @@ case class Stream(`type`: String, path: String, format: Format)
 
 object RestifyRecipe {
   def main(args: Array[String]) = {
-    if (args.length > 0) {
-      val yamlString = Source.fromFile(args(0)).getLines.mkString("\n")
+    args.headOption.foreach({ arg =>
+      val yamlString = Source.fromFile(arg).getLines.mkString("\n")
       val yamlJson: Either[ParsingFailure, Json] = parser.parse(yamlString)
 
       yamlJson.foreach({ json =>
@@ -50,8 +50,6 @@ object RestifyRecipe {
             })
           }))
       })
-    } else {
-      println("Please provide a YAML file path as an argument.")
-    }
+    })
   }
 }
