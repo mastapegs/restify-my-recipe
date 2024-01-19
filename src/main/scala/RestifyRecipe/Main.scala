@@ -1,21 +1,17 @@
 package RestifyRecipe
 
-import io.circe._
-import io.circe.yaml.parser
-import io.circe.parser._
+import io.circe.{ParsingFailure, Json}
 import io.circe.generic.auto._
-import io.circe.syntax._
-
-import scala.collection.JavaConverters._
-import scala.io.Source
-import scala.collection.JavaConverters._
-
+import io.circe.parser.decode
+import io.circe.syntax.EncoderOps
+import io.circe.yaml.parser
 import org.yaml.snakeyaml.Yaml
+import sttp.client4.Response
+import sttp.client4.quick.{quickRequest}
 
 import java.io.InputStream
-
-import sttp.client4.quick._
-import sttp.client4.Response
+import scala.collection.JavaConverters._
+import scala.io.Source
 
 case class Format(
     `type`: String,
