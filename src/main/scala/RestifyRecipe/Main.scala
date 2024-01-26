@@ -47,16 +47,13 @@ object RestifyRecipe {
             println(exception)
             println("-----")
           }
-          case Success(value) => {
-            val yamlString = Source.fromFile(arg).getLines.mkString("\n")
-            val yamlJson: Either[ParsingFailure, Json] =
-              parser.parse(yamlString)
-
-            val result = yamlJson
+          case Success(source) => {
+            val maybeIngestStreams = parser
+              .parse(source.getLines.mkString("\n"))
               .flatMap(_.hcursor.downField("ingestStreams").as[List[Json]])
               .flatMap(_.traverse(json => decode[Stream](json.noSpaces)))
 
-            result match
+            maybeIngestStreams match
               case Left(error) => {
                 println("-----")
                 println("An error occured")
