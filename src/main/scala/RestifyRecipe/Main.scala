@@ -18,6 +18,9 @@ import sttp.client4.quick._
 import sttp.client4.Response
 
 import cats.implicits._
+import scala.util.Try
+import scala.util.Failure
+import scala.util.Success
 
 case class Format(
     `type`: String,
@@ -29,37 +32,51 @@ case class Stream(`type`: String, path: String, format: Option[Format])
 
 object RestifyRecipe {
   def main(args: Array[String]) = {
-    val optArg = args.headOption
-
-    optArg match
-      case None => println("Need to enter a recipe path as an arg")
+    args.headOption match
+      case None => {
+        println("-----")
+        println("Need to enter a recipe path as an arg")
+        println("-----")
+      }
 
       case Some(arg) => {
-        val yamlString = Source.fromFile(arg).getLines.mkString("\n")
-        val yamlJson: Either[ParsingFailure, Json] = parser.parse(yamlString)
-
-        val result = yamlJson
-          .flatMap(_.hcursor.downField("ingestStreams").as[List[Json]])
-          .flatMap(_.traverse(json => decode[Stream](json.noSpaces)))
-
-        result match
-          case Left(error) => {
+        Try(Source.fromFile(arg)) match
+          case Failure(exception) => {
+            println("-----")
             println("An error occured")
-            println(error)
+            println(exception)
+            println("-----")
           }
-          case Right(ingestStreams) =>
-            ingestStreams.zipWithIndex.foreach({ case (stream, index) =>
-              println(index + 1)
-              println(stream)
-              println("-----")
-              val response = quickRequest
-                .post(
-                  uri"http://localhost:8080/api/v1/ingest/INGEST-${index + 1}"
-                )
-                .header("Content-Type", "application/json; charset=utf-8")
-                .body(stream.asJson.noSpaces)
-                .send()
-            })
+          case Success(value) => {
+            val yamlString = Source.fromFile(arg).getLines.mkString("\n")
+            val yamlJson: Either[ParsingFailure, Json] =
+              parser.parse(yamlString)
+
+            val result = yamlJson
+              .flatMap(_.hcursor.downField("ingestStreams").as[List[Json]])
+              .flatMap(_.traverse(json => decode[Stream](json.noSpaces)))
+
+            result match
+              case Left(error) => {
+                println("-----")
+                println("An error occured")
+                println(error)
+                println("-----")
+              }
+              case Right(ingestStreams) =>
+                ingestStreams.zipWithIndex.foreach({ case (stream, index) =>
+                  println(index + 1)
+                  println(stream)
+                  println("-----")
+                  val response = quickRequest
+                    .post(
+                      uri"http://localhost:8080/api/v1/ingest/INGEST-${index + 1}"
+                    )
+                    .header("Content-Type", "application/json; charset=utf-8")
+                    .body(stream.asJson.noSpaces)
+                    .send()
+                })
+          }
       }
   }
 }
