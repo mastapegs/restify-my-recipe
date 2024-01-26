@@ -17,26 +17,38 @@ import java.io.InputStream
 import sttp.client4.quick._
 import sttp.client4.Response
 
+import cats.implicits._
+
 case class Format(
     `type`: String,
-    delimiter: String,
-    headers: Boolean,
+    delimiter: Option[String],
+    headers: Option[Boolean],
     query: String
 )
-case class Stream(`type`: String, path: String, format: Format)
+case class Stream(`type`: String, path: String, format: Option[Format])
 
 object RestifyRecipe {
   def main(args: Array[String]) = {
-    args.headOption.foreach({ arg =>
-      val yamlString = Source.fromFile(arg).getLines.mkString("\n")
-      val yamlJson: Either[ParsingFailure, Json] = parser.parse(yamlString)
+    val optArg = args.headOption
 
-      yamlJson.foreach({ json =>
-        json.hcursor
-          .downField("ingestStreams")
-          .as[List[Json]]
-          .foreach(_.zipWithIndex.foreach({ case (streamJson, index) =>
-            decode[Stream](streamJson.noSpaces).foreach({ stream =>
+    optArg match
+      case None => println("Need to enter a recipe path as an arg")
+
+      case Some(arg) => {
+        val yamlString = Source.fromFile(arg).getLines.mkString("\n")
+        val yamlJson: Either[ParsingFailure, Json] = parser.parse(yamlString)
+
+        val result = yamlJson
+          .flatMap(_.hcursor.downField("ingestStreams").as[List[Json]])
+          .flatMap(_.traverse(json => decode[Stream](json.noSpaces)))
+
+        result match
+          case Left(error) => {
+            println("An error occured")
+            println(error)
+          }
+          case Right(ingestStreams) =>
+            ingestStreams.zipWithIndex.foreach({ case (stream, index) =>
               println(index + 1)
               println(stream)
               println("-----")
@@ -48,8 +60,6 @@ object RestifyRecipe {
                 .body(stream.asJson.noSpaces)
                 .send()
             })
-          }))
-      })
-    })
+      }
   }
 }

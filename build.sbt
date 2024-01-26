@@ -10,5 +10,6 @@ lazy val root = project
     libraryDependencies += "io.circe" %% "circe-yaml" % "0.14.2",
     libraryDependencies += "io.circe" %% "circe-generic" % "0.14.2",
     libraryDependencies += "io.circe" %% "circe-parser" % "0.14.2",
-    libraryDependencies += "com.softwaremill.sttp.client4" %% "core" % "4.0.0-M1"
+    libraryDependencies += "com.softwaremill.sttp.client4" %% "core" % "4.0.0-M1",
+    libraryDependencies += "org.typelevel" %% "cats-core" % "2.10.0"
   )

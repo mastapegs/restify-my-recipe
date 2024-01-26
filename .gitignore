@@ -33,3 +33,7 @@ metals.sbt
 
 *.jar
 *.db
+*.yaml
+*.yml
+
+recipes
